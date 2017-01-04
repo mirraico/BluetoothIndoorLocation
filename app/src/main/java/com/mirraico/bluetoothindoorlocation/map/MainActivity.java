@@ -10,6 +10,9 @@ import com.mirraico.bluetoothindoorlocation.BaseActivity;
 import com.mirraico.bluetoothindoorlocation.beacon.BeaconSearch;
 import com.mirraico.bluetoothindoorlocation.R;
 import com.mirraico.bluetoothindoorlocation.info.InfoThread;
+import com.mirraico.bluetoothindoorlocation.network.SendThread;
+import com.mirraico.bluetoothindoorlocation.network.TCPClient;
+import com.mirraico.bluetoothindoorlocation.sensor.Pedometer;
 import com.mirraico.bluetoothindoorlocation.sensor.SensorCollection;
 
 
@@ -20,6 +23,7 @@ public class MainActivity extends BaseActivity {
     private FMMap map;
     private BeaconSearch bs;
     private SensorCollection sc;
+    private Pedometer pd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +43,8 @@ public class MainActivity extends BaseActivity {
             public void onMapInitFailure(String path, int errCode) {}
         });
 
+        TCPClient.instance().connect("123.207.9.36", 8888);
+        SendThread.instance().start();
         InfoThread.instance().start();
 
         bs = new BeaconSearch();
@@ -46,6 +52,9 @@ public class MainActivity extends BaseActivity {
 
         sc = new SensorCollection();
         sc.init(this);
+
+        pd = new Pedometer();
+        new Thread(pd).start();
     }
 
     @Override

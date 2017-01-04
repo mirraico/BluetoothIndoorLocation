@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class InfoThread extends Thread {
 
@@ -94,6 +96,7 @@ public class InfoThread extends Thread {
                             }
                             break;
                         case InfoThread.SEND:
+                            Log.e(TAG, "SENDSEND");
 
                             break;
                     }
