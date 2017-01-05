@@ -7,6 +7,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.mirraico.bluetoothindoorlocation.beacon.BeaconInfo;
+import com.mirraico.bluetoothindoorlocation.network.TCPClient;
 import com.mirraico.bluetoothindoorlocation.sensor.SensorInfo;
 
 import org.json.JSONArray;
@@ -25,10 +26,11 @@ public class InfoThread extends Thread {
     public final static int SEND = 0;
     public final static int BEACON = 1;
     public final static int SENSOR = 2;
+    public final static int TYPE_INFO = 14;
 
     private static InfoThread infoThread;
 
-    private static String TAG = "info";
+    private static String TAG = "info_tag";
     private static Handler mHandler;
     private final static Object mSync = new Object();
 
@@ -96,7 +98,34 @@ public class InfoThread extends Thread {
                             }
                             break;
                         case InfoThread.SEND:
-                            Log.e(TAG, "SENDSEND");
+                            //Log.e(TAG, "SENDSEND");
+                            JSONObject jsonObject;
+                            try {
+                                jsonObject = new JSONObject();
+                                jsonObject.put("type", TYPE_INFO);
+                                jsonObject.put("isStep", false);
+                                JSONArray rssisArray = new JSONArray();
+                                for(Map.Entry<String, BeaconInfo> entry : beaconList.entrySet()) {
+                                    String MAC = entry.getKey();
+                                    int avgRSS = 0;
+                                    BeaconInfo bi = entry.getValue();
+                                    if(bi.RSS.size() == 0) continue;
+                                    for(int i = 0; i < bi.RSS.size(); i++) {
+                                        avgRSS += bi.RSS.get(i);
+                                    }
+                                    avgRSS /= bi.RSS.size();
+                                    bi.RSS.clear();
+                                    JSONObject rssiObject = new JSONObject();
+                                    rssiObject.put("MAC", MAC);
+                                    rssiObject.put("RSS", avgRSS);
+                                    rssisArray.put(rssiObject);
+                                }
+                                jsonObject.put("rssis", rssisArray);
+                                //Log.e(TAG, jsonObject.toString());
+                                TCPClient.instance().send(jsonObject.toString());
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
 
                             break;
                     }

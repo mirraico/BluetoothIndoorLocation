@@ -53,7 +53,7 @@ public class TCPClient {
             sendBuffer.clear();
             sendBuffer.put(str.getBytes("utf-8"));
             sendBuffer.flip();
-            Log.e(TAG, str);
+            Log.e(TAG, "send: " + str);
             return channel.write(sendBuffer);
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,13 +75,16 @@ public class TCPClient {
                 }
                 isConnect = true;
                 Log.e(TAG, "connect to tcp service successfully");
+                selector = Selector.open();
+                channel.register(selector, SelectionKey.OP_READ);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             while (true) {
                 try {
-                    selector.select();
+                    int num = selector.select();
+                    Log.e(TAG, "keyNums: " + num);
                     Set<SelectionKey> selectionKeys = selector.selectedKeys();
                     for (SelectionKey key : selectionKeys) {
                         if(key.isReadable()) {
@@ -91,7 +94,7 @@ public class TCPClient {
                             if (ret > 0) {
                                 recvBuffer.flip();
                                 String str = String.valueOf(cs.decode(recvBuffer).array());
-                                Log.e(TAG, "recv: str");
+                                Log.e(TAG, "recv: " + str);
                             }
                         }
                     }
