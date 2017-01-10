@@ -29,6 +29,9 @@ public class MainActivity extends BaseActivity {
     private TextView statusView;
     private String[] statusArray = new String[5];
 
+    //消息类型
+    public final static int TYPE_LOCATE = 1; //定位消息
+
     //地图
     private FMMapView mapView;
     private FMMap map;
@@ -46,6 +49,17 @@ public class MainActivity extends BaseActivity {
         @Override
         public void handleMessage(Message msg) {
             //TODO: 更新地图、状态显示
+            Bundle data = msg.getData();
+            int type = data.getInt("type");
+            switch(type) {
+                case TYPE_LOCATE:
+                    int x = data.getInt("x");
+                    int y = data.getInt("y");
+                    coordinateView.setText("X: " + x + "; Y: " + y);
+                    break;
+                default:
+                    break;
+            }
         }
     };
 

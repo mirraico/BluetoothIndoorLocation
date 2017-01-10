@@ -7,6 +7,11 @@ import android.os.Message;
 import android.util.Log;
 import android.util.StringBuilderPrinter;
 
+import com.mirraico.bluetoothindoorlocation.map.MainActivity;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -173,11 +178,23 @@ public class TCPConnection {
                     String json = pool.substring(l, r);
                     Log.e(TAG, "EXECUTED RECV JSON: " + json);
                     pool.delete(0, r);
-                    Message sendMsg = Message.obtain();
-                    Bundle sendData = new Bundle();
-                    sendData.putString("data", json);
-                    sendMsg.setData(sendData);
-                    mainHandler.sendMessage(sendMsg);
+                    try {
+                        JSONObject jsonObject = new JSONObject(json);
+                        int status = jsonObject.getInt("type");
+                        if(status == Protocol.TYPE_SUCCESS) {
+                            Message sendMsg = Message.obtain();
+                            Bundle sendData = new Bundle();
+                            sendData.putInt("type", MainActivity.TYPE_LOCATE);
+                            sendData.putInt("x", jsonObject.getInt("x"));
+                            sendData.putInt("y", jsonObject.getInt("y"));
+                            sendMsg.setData(sendData);
+                            mainHandler.sendMessage(sendMsg);
+                        } else if(status == Protocol.TYPE_FAILURE) {
+                            Log.e(TAG, "GET LOCATION FAILURE");
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 } else break;
             }
         }
