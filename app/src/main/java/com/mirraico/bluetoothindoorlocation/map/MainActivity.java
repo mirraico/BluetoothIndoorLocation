@@ -26,8 +26,6 @@ public class MainActivity extends BaseActivity {
 
     //用于测试
     private TextView coordinateView;
-    private TextView statusView;
-    private String[] statusArray = new String[5];
 
     //消息类型
     public final static int TYPE_LOCATE = 1; //定位消息
@@ -71,9 +69,7 @@ public class MainActivity extends BaseActivity {
         //用于测试
         Log.e(TAG, "-----START TEST-----");
         coordinateView = (TextView) findViewById(R.id.coordinate);
-        statusView = (TextView) findViewById(R.id.status);
         coordinateView.setText("X: 0; Y: 0");
-        statusView.setText("无");
 
         //Log.e(TAG, "CREATE MAP");
         //创建并显示地图
