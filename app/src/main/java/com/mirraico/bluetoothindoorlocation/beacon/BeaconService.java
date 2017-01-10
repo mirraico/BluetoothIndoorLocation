@@ -51,24 +51,24 @@ public class BeaconService {
                         }
                         //Log.e(TAG, "MAC: " + list.get(i).getMacAddress() + " RSS: " + list.get(i).getRssi());
                     }
+                    Message msg = Message.obtain();
+                    Bundle data = new Bundle();
+                    data.putInt("type", InfoThread.INFO_BEACON);
+                    data.putString("beacons", jsonArray.toString());
+                    msg.setData(data);
+                    infoThread.getHandler().sendMessage(msg); //发送给信息收集队列
                 }
-                Message msg = Message.obtain();
-                Bundle data = new Bundle();
-                data.putInt("type", InfoThread.INFO_BEACON);
-                data.putString("beacons", jsonArray.toString());
-                msg.setData(data);
-                infoThread.getHandler().sendMessage(msg); //发送给信息收集队列
             }
         });
-        connectToService(); //启动beacon service
+        startService(); //启动beacon service
     }
 
-    public void connectToService() {
+    public void startService() {
         beaconManager.connect(new BeaconManager.ServiceReadyCallback() {
             @Override
             public void onServiceReady() {
                 try {
-                    //Log.e(TAG, "CONNECT TO BEACON SERVICE");
+                    //Log.e(TAG, "START BEACON SERVICE");
                     beaconManager.startRanging(ALL_BEACONS_REGION);
                     Log.e(TAG, "CONNECT TO BEACON SERVICE SUCCESSFULLY");
                 } catch (RemoteException e) {

@@ -15,7 +15,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class InfoThread extends Thread {
@@ -32,6 +34,7 @@ public class InfoThread extends Thread {
     public final static int INFO_BEACON = 1; //BEACON类型数据
 
     private Map<String, BeaconData> beaconList;
+    private List<String> macList; //维护一个MAC列表，在有些beacon搜索不到时，从该列表查出哪个搜索不到了，并清除map中对应的BeaconData
 
     private InfoThread() {}
 
@@ -40,6 +43,7 @@ public class InfoThread extends Thread {
             infoThread = new InfoThread();
             sendThread = SendThread.instance();
             infoThread.beaconList = new HashMap<>();
+            infoThread.macList = new ArrayList<>();
         }
         return infoThread;
     }
@@ -69,11 +73,40 @@ public class InfoThread extends Thread {
                                     BeaconData beaconData = beaconList.get(MAC);
                                     if(beaconData == null) { //没有见过的beacon MAC就新建
                                         beaconData = new BeaconData(MAC);
+                                        macList.add(MAC); //维护MAC列表
                                         beaconList.put(MAC, beaconData);
                                     }
                                     beaconData.pushRSS(RSS); //滑动处理RSS
                                     //Log.e(TAG, "MAC: " + MAC + " RSS: " + RSS);
                                 }
+                                if(jsonArray.length() < macList.size()) { //有MAC没有收到，需要移除
+                                    String[] nowMAC = new String[jsonArray.length()];
+                                    for(int i = 0; i < jsonArray.length(); i++) {
+                                        nowMAC[i] = jsonArray.getJSONObject(i).getString("MAC");
+                                    }
+                                    for(int i = 0; i < macList.size(); i++) {
+                                        boolean exist = false;
+                                        String oriMAC = macList.get(i);
+                                        for(int j = 0; j < nowMAC.length; j++) {
+                                            if(oriMAC.equals(nowMAC[j])) {
+                                                exist = true;
+                                                break;
+                                            }
+                                        }
+                                        if(!exist) {
+                                            beaconList.remove(oriMAC);
+                                            macList.remove(oriMAC);
+                                        }
+                                    }
+                                }
+                                /*
+                                if(jsonArray.length() != macList.size() ||
+                                        macList.size() != beaconList.size() ||
+                                        jsonArray.length() != beaconList.size()
+                                        ) { //调试用
+                                    Log.e(TAG, "ERROR IN MACLIST MAINTENANCE");
+                                }*/
+                                Log.e(TAG, "RECV BEACON NUM: " + jsonArray.length() + ", MAC LIST SIZE: " + macList.size() + ", BEACON MAP SIZE: " + beaconList.size());
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -93,7 +126,6 @@ public class InfoThread extends Thread {
                                     if(beaconData.isEmpty()) continue;
                                     String MAC = beaconData.getMAC();
                                     int avgRSS = beaconData.getAverageRSS(); //取RSS平均值
-                                    beaconData.clearRSS();
 
                                     JSONObject rssiObject = new JSONObject();
                                     rssiObject.put("MAC", MAC);
