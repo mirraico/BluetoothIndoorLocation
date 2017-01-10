@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
+import android.widget.TextView;
 
 import com.fengmap.android.map.FMMap;
 import com.fengmap.android.map.FMMapView;
@@ -21,6 +23,11 @@ import com.mirraico.bluetoothindoorlocation.sensor.PedometerService;
 public class MainActivity extends BaseActivity {
 
     private static String TAG = MainActivity.class.getSimpleName();
+
+    //用于测试
+    private TextView coordinateView;
+    private TextView statusView;
+    private String[] statusArray = new String[5];
 
     //地图
     private FMMapView mapView;
@@ -47,8 +54,16 @@ public class MainActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //用于测试
+        Log.e(TAG, "-----START TEST-----");
+        coordinateView = (TextView) findViewById(R.id.coordinate);
+        statusView = (TextView) findViewById(R.id.status);
+        coordinateView.setText("X: 0; Y: 0");
+        statusView.setText("无");
+
         //Log.e(TAG, "CREATE MAP");
         //创建并显示地图
+        /*
         mapView = (FMMapView) findViewById(R.id.mapview);
         map = mapView.getFMMap();
         map.openMapById(mapId);
@@ -59,24 +74,30 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onMapInitFailure(String path, int errCode) {}
         });
+        */
 
         //网络连接
+        //Log.e(TAG, "START CONNECTION");
         TCPConnection conn = TCPConnection.instance();
         conn.setHandler(handler);
         conn.setServerAddr(serverIp, serverPort);
         conn.connect();
 
         //初始化发送队列
+        //Log.e(TAG, "INIT SEND THREAD");
         SendThread.instance().start();
 
         //初始化信息收集队列
+        //Log.e(TAG, "INIT INFO THREAD");
         InfoThread.instance().start();
 
         //启动beacon服务
+        //Log.e(TAG, "START BEACON SERVICE");
         beaconService = new BeaconService();
         beaconService.initService(this);
 
         //启动计步服务
+        //Log.e(TAG, "START PEDOMETER SERVICE");
         pedometerServiceIntent = new Intent(this, PedometerService.class);
         startService(pedometerServiceIntent);
     }

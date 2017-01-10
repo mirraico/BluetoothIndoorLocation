@@ -48,12 +48,13 @@ public class PedometerService extends Service implements StepListener {
         sensorManager.registerListener(sensorChangeListener, accelerateSensor, SensorManager.SENSOR_DELAY_UI);
         sensorManager.registerListener(sensorChangeListener, magneticSensor, SensorManager.SENSOR_DELAY_UI);
         sensorManager.registerListener(sensorChangeListener, linearAcceleratorSensor, SensorManager.SENSOR_DELAY_UI);
-        //Log.e(TAG, "REGISTER SENSOR_LISTENER SUCCESSFULLY");
+        Log.e(TAG, "REGISTER SENSOR LISTENER SUCCESSFULLY");
     }
 
     //可以发送时回调，发送消息
     @Override
     public void onSend(String msg) {
+        //Log.e(TAG, "ONSEND: " + msg);
         Message sendMsg = Message.obtain();
         Bundle data = new Bundle();
         data.putInt("type", InfoThread.INFO_SENSOR);

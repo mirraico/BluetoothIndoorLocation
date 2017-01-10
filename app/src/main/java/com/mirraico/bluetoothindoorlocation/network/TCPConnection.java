@@ -30,7 +30,7 @@ public class TCPConnection {
     private SocketChannel channel;
     private Selector selector;
 
-    private final int BUFFER_SIZE = 1024;
+    private final static int BUFFER_SIZE = 1024;
     private ByteBuffer sendBuffer;
     private ByteBuffer recvBuffer;
     private StringBuilder pool; //处理TCP黏包的缓冲池
@@ -124,6 +124,7 @@ public class TCPConnection {
                             recvBuffer.clear();
                             int ret = recv.read(recvBuffer);
                             if(ret == -1) { //服务器已断开
+                                Log.e(TAG, "SERVER IS DOWN");
                                 flag = false;
                                 //TODO: 通知主界面
                                 return;

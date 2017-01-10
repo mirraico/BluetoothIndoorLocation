@@ -33,7 +33,13 @@ public class SendThread extends Thread {
             handler = new Handler(){
                 @Override
                 public void handleMessage(Message msg) {
-                    conn.send(msg.getData().getString("data")); //发送队列中的数据
+                    Log.e(TAG, "TRY TO SEND(" + msg.getData().getString("data").length() + " BYTES): " + msg.getData().getString("data"));
+                    int ret = conn.send(msg.getData().getString("data")); //发送队列中的数据
+                    if(ret == -1) {
+                        Log.e(TAG, "SERVER IS NOT CONNECTED");
+                    } else {
+                        Log.e(TAG, "SENDED " + ret + " BYTES");
+                    }
                 }
             };
             sync.notifyAll(); //准备好了就可以唤醒拿handler的函数了

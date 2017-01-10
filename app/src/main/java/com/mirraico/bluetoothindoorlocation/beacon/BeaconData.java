@@ -33,11 +33,15 @@ public class BeaconData {
 
     //返回beacon平均RSS
     public int getAverageRSS() {
-        if(RSSArrayCnt == 0) return 0;
+        if(isEmpty()) return 0;
         int aveRss = 0;
         for(int i = 0; i < RSSArrayCnt; i++) {
             aveRss += RSSArray[i];
         }
         return aveRss / RSSArrayCnt;
+    }
+
+    public boolean isEmpty() {
+        return RSSArrayCnt == 0;
     }
 }

@@ -68,8 +68,9 @@ public class BeaconService {
             @Override
             public void onServiceReady() {
                 try {
-                    Log.e(TAG, "CONNECT TO BEACON SERVICE");
+                    //Log.e(TAG, "CONNECT TO BEACON SERVICE");
                     beaconManager.startRanging(ALL_BEACONS_REGION);
+                    Log.e(TAG, "CONNECT TO BEACON SERVICE SUCCESSFULLY");
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }

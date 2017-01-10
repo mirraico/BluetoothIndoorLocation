@@ -4,6 +4,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.util.Log;
 
 import com.mirraico.bluetoothindoorlocation.network.Protocol;
 
@@ -12,6 +13,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class SensorChangeListener implements SensorEventListener {
+
+    private static String TAG = SensorChangeListener.class.getSimpleName();
 
     /* 以下部分用于计步 */
     //存放三轴加速度数据
@@ -138,8 +141,10 @@ public class SensorChangeListener implements SensorEventListener {
                     //超过3步开始计步，防止无意义抖动，前3步会在第3步的时候一起显示，同时3步一起发送
                     if(detectValidStep()) {
                         sendArray[sendCnt++] = generateSensorInfo(timeOfNow - timeOfLastPeak);
+                        Log.e(TAG, "STEP COUNT: " + sendCnt);
                     } else {
                         sendCnt = 0;
+                        Log.e(TAG, "STEP COUNT: " + sendCnt);
                     }
                     //3次调用回调函数
                     if (sendCnt == 3 && stepListener != null) {
@@ -149,12 +154,13 @@ public class SensorChangeListener implements SensorEventListener {
                                 JSONObject jsonObject;
                                 jsonObject = new JSONObject();
                                 jsonObject.put("stepNo", i + 1);
-                                jsonObject.put("sensorinfo", sendArray[i]);
+                                jsonObject.put("sensorInfo", sendArray[i]);
                                 sensorsArray.put(jsonObject);
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
+                        //Log.e(TAG, "ONSEND: " + sensorsArray.toString());
                         stepListener.onSend(sensorsArray.toString());
                         sendCnt = 0;
                     }
@@ -211,7 +217,7 @@ public class SensorChangeListener implements SensorEventListener {
      * 3.连续记录了2步用户还在运动，之前的数据才有效
      */
     private boolean detectValidStep() {
-        if (timeOfThisPeak - timeOfLastPeak < 3000) {
+        if (timeOfThisPeak - timeOfLastPeak < 1200) {
             return true;
         } else {
             return false;
@@ -336,12 +342,14 @@ public class SensorChangeListener implements SensorEventListener {
         double a2 = linearAcceleratorValues[0]*x2 + linearAcceleratorValues[1]*y2 +
                 linearAcceleratorValues[2]*z2;
 
+        //Log.e(TAG, "UD:" + a0 + " NS:" + a1 + " WE:" + a2 + " ANGLE:" + Math.toDegrees(values[0]) + " TIME:" + timeDiff);
+
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("udAcce", a0);
             jsonObject.put("nsAcce", a1);
             jsonObject.put("weAcce", a2);
-            jsonObject.put("azimuthAngle", Math.toDegrees(values[0]));
+            jsonObject.put("azimuthAngle", values[0]);
             jsonObject.put("timeDiff", timeDiff);
         } catch (JSONException e) {
             e.printStackTrace();

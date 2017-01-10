@@ -5,10 +5,24 @@
     android:layout_height="match_parent"
     tools:context=".map.MainActivity">
 
-    <com.fengmap.android.map.FMMapView
+    <!--<com.fengmap.android.map.FMMapView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:id="@+id/mapview" >-->
+    <!--</com.fengmap.android.map.FMMapView>-->
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:id="@+id/coordinate"
+        />
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/mapview" >
-    </com.fengmap.android.map.FMMapView>
+        android:layout_below="@id/coordinate"
+        android:textSize="20sp"
+        android:id="@+id/status"
+        />
 
 </RelativeLayout>

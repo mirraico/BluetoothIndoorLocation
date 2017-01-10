@@ -80,7 +80,7 @@ public class InfoThread extends Thread {
                             break;
                         case InfoThread.INFO_SENSOR:
                             json = data.getString("sensors"); //这个json是合格的通信格式，准备直接发送
-                            //Log.e(TAG, "JSON: " json);
+                            //Log.e(TAG, "RECV SENSORS: " + json);
 
                             JSONObject jsonObject;
                             try {
@@ -90,6 +90,7 @@ public class InfoThread extends Thread {
                                 JSONArray rssisArray = new JSONArray();
                                 for(Map.Entry<String, BeaconData> entry : beaconList.entrySet()) {
                                     BeaconData beaconData = entry.getValue();
+                                    if(beaconData.isEmpty()) continue;
                                     String MAC = beaconData.getMAC();
                                     int avgRSS = beaconData.getAverageRSS(); //取RSS平均值
                                     beaconData.clearRSS();
@@ -99,12 +100,17 @@ public class InfoThread extends Thread {
                                     rssiObject.put("RSS", avgRSS);
                                     rssisArray.put(rssiObject);
                                 }
-                                jsonObject.put("rssis", rssisArray);
+                                if(rssisArray.length() > 0) {
+                                    jsonObject.put("hasRSS", true);
+                                    jsonObject.put("rssis", rssisArray);
+                                } else {
+                                    jsonObject.put("hasRSS", false);
+                                }
                                 jsonObject.put("sensors", json);
                                 //Log.e(TAG, "SEND JOSN: " + jsonObject.toString());
                                 Message sendMsg = Message.obtain();
                                 Bundle sendData = new Bundle();
-                                data.putString("data", jsonObject.toString());
+                                sendData.putString("data", jsonObject.toString());
                                 sendMsg.setData(sendData);
                                 //把消息递交发送队列
                                 sendThread.getHandler().sendMessage(sendMsg);
