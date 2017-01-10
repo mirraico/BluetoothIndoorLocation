@@ -217,11 +217,11 @@ public class SensorChangeListener implements SensorEventListener {
 
     /*
      * 1.连续记录3才开始计步
-     * 2.例如记录的2步用户停住超过1.2秒，则前面的记录失效，下次从头开始
+     * 2.例如记录的2步用户停住超过3秒，则前面的记录失效，下次从头开始
      * 3.连续记录了2步用户还在运动，之前的数据才有效
      */
     private boolean detectValidStep() {
-        if (timeOfThisPeak - timeOfLastPeak < 1200) {
+        if (timeOfThisPeak - timeOfLastPeak < 3000) {
             return true;
         } else {
             return false;
