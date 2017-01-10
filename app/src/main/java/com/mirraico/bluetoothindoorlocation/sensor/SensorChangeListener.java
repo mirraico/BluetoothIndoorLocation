@@ -51,6 +51,8 @@ public class SensorChangeListener implements SensorEventListener {
     private int arrayCount = 0;
     //步数累计，用于过滤无意义抖动
     private int stepCount = 0;
+    //已经在行走的标记
+    private boolean stepFlag = false;
 
     /* 以下部分用于sensor采集并处理加速度 */
     //存放三轴地磁强度数据
@@ -58,8 +60,8 @@ public class SensorChangeListener implements SensorEventListener {
     //存放三轴线性加速度数据
     private float[] linearAcceleratorValues = new float[3];
 
-    //存放待发送的数据，3次一发
-    private String[] sendArray = new String[3];
+    //存放待发送的数据，从静止到走动8次一发，走动中2次一发
+    private String[] sendArray = new String[8];
     private int sendCnt = 0;
 
     //回调接口
@@ -144,13 +146,15 @@ public class SensorChangeListener implements SensorEventListener {
                         Log.e(TAG, "STEP COUNT: " + sendCnt);
                     } else {
                         sendCnt = 0;
+                        stepFlag = false;
                         Log.e(TAG, "STEP COUNT: " + sendCnt);
                     }
-                    //3次调用回调函数
-                    if (sendCnt == 3 && stepListener != null) {
+                    //2次(行动中)或8次(静止)调用回调函数
+                    if ((stepFlag && sendCnt == 2) || (!stepFlag && sendCnt == 8)) {
+                        stepFlag = true;
                         JSONArray sensorsArray = new JSONArray();
                         try {
-                            for(int i = 0; i < 3; i++) {
+                            for(int i = 0; i < sendCnt; i++) {
                                 JSONObject jsonObject;
                                 jsonObject = new JSONObject();
                                 jsonObject.put("stepNo", i + 1);
@@ -213,7 +217,7 @@ public class SensorChangeListener implements SensorEventListener {
 
     /*
      * 1.连续记录3才开始计步
-     * 2.例如记录的2步用户停住超过3秒，则前面的记录失效，下次从头开始
+     * 2.例如记录的2步用户停住超过1.2秒，则前面的记录失效，下次从头开始
      * 3.连续记录了2步用户还在运动，之前的数据才有效
      */
     private boolean detectValidStep() {

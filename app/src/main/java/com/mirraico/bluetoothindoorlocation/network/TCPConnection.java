@@ -30,7 +30,7 @@ public class TCPConnection {
     private SocketChannel channel;
     private Selector selector;
 
-    private final static int BUFFER_SIZE = 1024;
+    private final static int BUFFER_SIZE = 4096;
     private ByteBuffer sendBuffer;
     private ByteBuffer recvBuffer;
     private StringBuilder pool; //处理TCP黏包的缓冲池
