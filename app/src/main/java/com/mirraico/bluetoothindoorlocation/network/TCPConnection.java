@@ -1,7 +1,9 @@
 package com.mirraico.bluetoothindoorlocation.network;
 
 
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.util.StringBuilderPrinter;
 
@@ -130,8 +132,8 @@ public class TCPConnection {
                                 return;
                             } else if(ret > 0) {
                                 recvBuffer.flip();
-                                String recvString = String.valueOf(charset.decode(recvBuffer).array());
-                                Log.e(TAG, "RECV: " + recvString);
+                                String recvString = String.valueOf(charset.decode(recvBuffer).array()).substring(0, ret);
+                                //Log.e(TAG, "RECV: " + recvString);
                                 pool.append(recvString);
                                 execute(pool); //TCP黏包处理
                             }
@@ -148,9 +150,36 @@ public class TCPConnection {
             }
         }
 
-        //TCP黏包处理，找出合法的JSON格式并传递
+        //TCP黏包处理，找出合法的JSON格式并返回，未找到返回null
         private void execute(StringBuilder pool) {
-            //TODO: TCP黏包处理
+            while(true) {
+                boolean flag = false;
+                int l = 0, r = 0;
+                for(int i = 0; i < pool.length(); i++) {
+                    if(pool.charAt(i) == '{') {
+                        if(i != 0) { //调试用
+                            Log.e(TAG, "JSON FORMAT ERROR");
+                        }
+                        l = i;
+                        flag = true;
+                        continue;
+                    }
+                    if(pool.charAt(i) == '}' && flag) {
+                        r = i + 1;
+                        break;
+                    }
+                }
+                if(r != 0) {
+                    String json = pool.substring(l, r);
+                    Log.e(TAG, "EXECUTED RECV JSON: " + json);
+                    pool.delete(0, r);
+                    Message sendMsg = Message.obtain();
+                    Bundle sendData = new Bundle();
+                    sendData.putString("data", json);
+                    sendMsg.setData(sendData);
+                    mainHandler.sendMessage(sendMsg);
+                } else break;
+            }
         }
     }
 }
