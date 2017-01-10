@@ -138,7 +138,7 @@ public class SensorCollection {
                 //Log.e(TAG, "ud:" + a0 + "  ns:" + a1 + "  we:" + a2 + "  angle:" + Math.toDegrees(values[0]));
                 Message msg = Message.obtain();
                 Bundle data = new Bundle();
-                data.putInt("type", InfoThread.SENSOR);
+                data.putInt("type", InfoThread.INFO_SENSOR);
                 JSONObject jsonObject = new JSONObject();
                 try {
                     jsonObject.put("ud", a0);
@@ -151,7 +151,7 @@ public class SensorCollection {
                 data.putString("sensor", jsonObject.toString());
                 Log.e(TAG, jsonObject.toString());
                 msg.setData(data);
-                InfoThread.getHandler().sendMessage(msg);
+                InfoThread.instance().getHandler().sendMessage(msg);
                 interval = 0;
             }
 

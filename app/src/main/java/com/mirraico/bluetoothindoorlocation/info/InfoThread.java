@@ -6,41 +6,39 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import com.mirraico.bluetoothindoorlocation.beacon.BeaconInfo;
-import com.mirraico.bluetoothindoorlocation.network.TCPClient;
-import com.mirraico.bluetoothindoorlocation.sensor.SensorInfo;
+import com.mirraico.bluetoothindoorlocation.beacon.BeaconData;
+import com.mirraico.bluetoothindoorlocation.network.Protocol;
+import com.mirraico.bluetoothindoorlocation.network.SendThread;
+import com.mirraico.bluetoothindoorlocation.network.TCPConnection;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class InfoThread extends Thread {
 
-    public final static int SEND = 0;
-    public final static int BEACON = 1;
-    public final static int SENSOR = 2;
-    public final static int TYPE_INFO = 14;
+    private static String TAG = InfoThread.class.getSimpleName();
 
-    private static InfoThread infoThread;
+    private static InfoThread infoThread; //单例模式
+    private static SendThread sendThread; //发送队列实例
 
-    private static String TAG = "info_tag";
-    private static Handler mHandler;
-    private final static Object mSync = new Object();
+    private static Handler handler; //发送队列
+    private final static Object sync = new Object(); //同步锁
 
-    private List<SensorInfo> sensorList;
-    private Map<String, BeaconInfo> beaconList;
+    public final static int INFO_SENSOR = 0; //传感器类型数据
+    public final static int INFO_BEACON = 1; //BEACON类型数据
+
+    private Map<String, BeaconData> beaconList;
+
+    private InfoThread() {}
 
     public static synchronized InfoThread instance() {
         if ( infoThread == null ) {
             infoThread = new InfoThread();
-            infoThread.sensorList = new ArrayList<>() ;
+            sendThread = SendThread.instance();
             infoThread.beaconList = new HashMap<>();
         }
         return infoThread;
@@ -48,103 +46,90 @@ public class InfoThread extends Thread {
 
     @Override
     public void run() {
-        Log.i(TAG, "start info thread");
+        //Log.e(TAG, "START INFO THREAD");
 
         Looper.prepare();
-        synchronized (mSync) {
-            mHandler = new Handler(){
+        synchronized (sync) {
+            handler = new Handler(){
                 @Override
                 public void handleMessage(Message msg) {
                     Bundle data = msg.getData();
                     int type = data.getInt("type");
                     String json;
                     switch(type) {
-                        case InfoThread.BEACON:
-                            json = data.getString("beacon");
-                            //Log.e(TAG, json);
+                        case InfoThread.INFO_BEACON:
+                            json = data.getString("beacons");
+                            //Log.e(TAG, "JSON: " json);
                             try {
-                                JSONArray jsonList = new JSONArray(json);
-                                for(int i = 0; i < jsonList.length(); i++) {
-                                    JSONObject jsonObject = jsonList.getJSONObject(i);
-                                    String MAC = jsonObject.getString("MAC");
-                                    int RSS = jsonObject.getInt("RSS");
-                                    BeaconInfo beaconInfo = beaconList.get(MAC);
-                                    if(beaconInfo == null) {
-                                        beaconInfo = new BeaconInfo(MAC);
-                                        beaconList.put(MAC, beaconInfo);
+                                JSONArray jsonArray = new JSONArray(json);
+                                for(int i = 0; i < jsonArray.length(); i++) {
+                                    JSONObject jsonBeacon = jsonArray.getJSONObject(i);
+                                    String MAC = jsonBeacon.getString("MAC");
+                                    int RSS = jsonBeacon.getInt("RSS");
+                                    BeaconData beaconData = beaconList.get(MAC);
+                                    if(beaconData == null) { //没有见过的beacon MAC就新建
+                                        beaconData = new BeaconData(MAC);
+                                        beaconList.put(MAC, beaconData);
                                     }
-                                    beaconInfo.RSS.add(RSS);
-                                    Log.e(TAG, MAC + ".RSS.size(): " + beaconInfo.RSS.size());
-                                    //Log.e(TAG, MAC + " " + RSS);
+                                    beaconData.pushRSS(RSS); //滑动处理RSS
+                                    //Log.e(TAG, "MAC: " + MAC + " RSS: " + RSS);
                                 }
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
                             break;
-                        case InfoThread.SENSOR:
-                            json = data.getString("sensor");
-                            //Log.e(TAG, json);
-                            try {
-                                JSONObject jsonObject = new JSONObject(json);
-                                double ud = jsonObject.getDouble("ud");
-                                double ns = jsonObject.getDouble("ns");
-                                double we = jsonObject.getDouble("we");
-                                double angle = jsonObject.getDouble("angle");
-                                sensorList.add(new SensorInfo(ud, ns, we, angle));
-                                Log.e(TAG, "sensorList.size(): " + sensorList.size());
-                                //Log.e(TAG, ud + " " + ns + " " + we + " " + angle);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                            break;
-                        case InfoThread.SEND:
-                            //Log.e(TAG, "SENDSEND");
+                        case InfoThread.INFO_SENSOR:
+                            json = data.getString("sensors"); //这个json是合格的通信格式，准备直接发送
+                            //Log.e(TAG, "JSON: " json);
+
                             JSONObject jsonObject;
                             try {
                                 jsonObject = new JSONObject();
-                                jsonObject.put("type", TYPE_INFO);
-                                jsonObject.put("isStep", false);
+                                jsonObject.put("type", Protocol.TYPE_REQ);
+                                jsonObject.put("isStep", true);
                                 JSONArray rssisArray = new JSONArray();
-                                for(Map.Entry<String, BeaconInfo> entry : beaconList.entrySet()) {
-                                    String MAC = entry.getKey();
-                                    int avgRSS = 0;
-                                    BeaconInfo bi = entry.getValue();
-                                    if(bi.RSS.size() == 0) continue;
-                                    for(int i = 0; i < bi.RSS.size(); i++) {
-                                        avgRSS += bi.RSS.get(i);
-                                    }
-                                    avgRSS /= bi.RSS.size();
-                                    bi.RSS.clear();
+                                for(Map.Entry<String, BeaconData> entry : beaconList.entrySet()) {
+                                    BeaconData beaconData = entry.getValue();
+                                    String MAC = beaconData.getMAC();
+                                    int avgRSS = beaconData.getAverageRSS(); //取RSS平均值
+                                    beaconData.clearRSS();
+
                                     JSONObject rssiObject = new JSONObject();
                                     rssiObject.put("MAC", MAC);
                                     rssiObject.put("RSS", avgRSS);
                                     rssisArray.put(rssiObject);
                                 }
                                 jsonObject.put("rssis", rssisArray);
-                                //Log.e(TAG, jsonObject.toString());
-                                TCPClient.instance().send(jsonObject.toString());
+                                jsonObject.put("sensors", json);
+                                //Log.e(TAG, "SEND JOSN: " + jsonObject.toString());
+                                Message sendMsg = Message.obtain();
+                                Bundle sendData = new Bundle();
+                                data.putString("data", jsonObject.toString());
+                                sendMsg.setData(sendData);
+                                //把消息递交发送队列
+                                sendThread.getHandler().sendMessage(sendMsg);
+
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
-
                             break;
                     }
                 }
             };
-            mSync.notifyAll();
+            sync.notifyAll(); //准备好了就可以唤醒拿handler的函数了
         }
         Looper.loop();
     }
 
-    public static Handler getHandler() {
-        synchronized (mSync) {
-            if (mHandler == null) {
+    public Handler getHandler() {
+        synchronized (sync) {
+            if (handler == null) {
                 try {
-                    mSync.wait();
+                    sync.wait(); //handler还没好时阻塞
                 } catch (InterruptedException e) {
                 }
             }
-            return mHandler;
+            return handler;
         }
     }
 }

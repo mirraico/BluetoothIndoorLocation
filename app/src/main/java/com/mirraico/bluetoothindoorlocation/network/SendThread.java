@@ -7,47 +7,49 @@ import android.util.Log;
 
 public class SendThread extends Thread {
 
-    private static SendThread sendThread;
+    private static String TAG = SendThread.class.getSimpleName();
 
-    private static String TAG = "send";
-    private static Handler mHandler;
-    private final static Object mSync = new Object();
-    private static TCPClient client;
+    private static SendThread sendThread; //单例模式
+
+    private static TCPConnection conn; //TCP连接的实例
+    private static Handler handler; //发送队列
+    private final static Object sync = new Object(); //同步锁
+
+    private SendThread() {}
 
     public static synchronized SendThread instance() {
-        if ( sendThread == null ) {
+        if(sendThread == null) {
             sendThread = new SendThread();
-            client = TCPClient.instance();
+            conn = TCPConnection.instance();
         }
         return sendThread;
     }
 
     @Override
     public void run() {
-        Log.i(TAG, "start send thread");
-
+        //Log.e(TAG, "START SEND THREAD");
         Looper.prepare();
-        synchronized (mSync) {
-            mHandler = new Handler(){
+        synchronized (sync) {
+            handler = new Handler(){
                 @Override
                 public void handleMessage(Message msg) {
-                    client.send(msg.getData().getString("send"));
+                    conn.send(msg.getData().getString("data")); //发送队列中的数据
                 }
             };
-            mSync.notifyAll();
+            sync.notifyAll(); //准备好了就可以唤醒拿handler的函数了
         }
         Looper.loop();
     }
 
-    public static Handler getHandler() {
-        synchronized (mSync) {
-            if (mHandler == null) {
+    public Handler getHandler() {
+        synchronized (sync) {
+            if(handler == null) {
                 try {
-                    mSync.wait();
+                    sync.wait(); //handler还没好时阻塞
                 } catch (InterruptedException e) {
                 }
             }
-            return mHandler;
+            return handler;
         }
     }
 }

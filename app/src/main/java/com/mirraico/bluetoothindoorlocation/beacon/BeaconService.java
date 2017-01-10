@@ -19,23 +19,26 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-public class BeaconSearch {
-    private static String TAG = "ibeacon";
+public class BeaconService {
 
-    private static final Region ALL_BEACONS_REGION = new Region("108", null,
+    private static String TAG = BeaconService.class.getSimpleName();
+
+    private static InfoThread infoThread; //信息收集队列实例
+
+    private static final Region ALL_BEACONS_REGION = new Region("108", null, //beacon sdk的默认参数
             null, null);
-
     private BeaconManager beaconManager;
 
-    public void init(Activity activity) {
-        AprilL.enableDebugLogging(true);
+    public void initService(Activity activity) {
+        infoThread = InfoThread.instance();
+        //AprilL.enableDebugLogging(true);
         beaconManager = new BeaconManager(activity.getApplicationContext());
-        beaconManager.setForegroundScanPeriod(300, 0);
+        beaconManager.setForegroundScanPeriod(200, 0); //扫描间隔200ms
         beaconManager.setRangingListener(new RangingListener() {
             @Override
             public void onBeaconsDiscovered(Region region, List<Beacon> list) {
                 JSONArray jsonArray = new JSONArray();
-                JSONObject jsonObject = null;
+                JSONObject jsonObject;
                 if(list != null && list.size() > 0) {
                     for(int i = 0; i < list.size(); i++) {
                         jsonObject = new JSONObject();
@@ -46,28 +49,18 @@ public class BeaconSearch {
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
-                        //Log.e(TAG, list.get(i).getMacAddress() + " " + list.get(i).getRssi());
+                        //Log.e(TAG, "MAC: " + list.get(i).getMacAddress() + " RSS: " + list.get(i).getRssi());
                     }
                 }
                 Message msg = Message.obtain();
                 Bundle data = new Bundle();
-                data.putInt("type", InfoThread.BEACON);
-                data.putString("beacon", jsonArray.toString());
+                data.putInt("type", InfoThread.INFO_BEACON);
+                data.putString("beacons", jsonArray.toString());
                 msg.setData(data);
-                InfoThread.getHandler().sendMessage(msg);
+                infoThread.getHandler().sendMessage(msg); //发送给信息收集队列
             }
         });
-        connectToService();
-    }
-
-    public void destory() {
-        try {
-            Log.e(TAG, "disconnect to beacon service");
-            beaconManager.stopRanging(ALL_BEACONS_REGION);
-            beaconManager.disconnect();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+        connectToService(); //启动beacon service
     }
 
     public void connectToService() {
@@ -75,7 +68,7 @@ public class BeaconSearch {
             @Override
             public void onServiceReady() {
                 try {
-                    Log.e(TAG, "connect to beacon service");
+                    Log.e(TAG, "CONNECT TO BEACON SERVICE");
                     beaconManager.startRanging(ALL_BEACONS_REGION);
                 } catch (RemoteException e) {
                     e.printStackTrace();
@@ -84,4 +77,12 @@ public class BeaconSearch {
         });
     }
 
+    public void destory() {
+        try {
+            beaconManager.stopRanging(ALL_BEACONS_REGION);
+            beaconManager.disconnect();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
 }
