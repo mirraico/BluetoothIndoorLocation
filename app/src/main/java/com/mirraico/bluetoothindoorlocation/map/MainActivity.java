@@ -1,5 +1,6 @@
 package com.mirraico.bluetoothindoorlocation.map;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -14,7 +15,7 @@ import com.mirraico.bluetoothindoorlocation.R;
 import com.mirraico.bluetoothindoorlocation.info.InfoThread;
 import com.mirraico.bluetoothindoorlocation.network.SendThread;
 import com.mirraico.bluetoothindoorlocation.network.TCPConnection;
-import com.mirraico.bluetoothindoorlocation.sensor.SensorCollection;
+import com.mirraico.bluetoothindoorlocation.sensor.PedometerService;
 
 
 public class MainActivity extends BaseActivity {
@@ -30,9 +31,8 @@ public class MainActivity extends BaseActivity {
     private String serverIp = "123.207.9.36";
     private int serverPort = 8888;
 
-    private BeaconService beaconService;
-    private SensorCollection sc;
-    private Pedometer pd;
+    private BeaconService beaconService; //beacon服务
+    Intent pedometerServiceIntent; //计步服务
 
     //Handler，用于更新地图、状态显示
     private Handler handler = new Handler() {
@@ -76,18 +76,15 @@ public class MainActivity extends BaseActivity {
         beaconService = new BeaconService();
         beaconService.initService(this);
 
-        /*
-        sc = new SensorCollection();
-        sc.init(this);
-
-        pd = new Pedometer();
-        new Thread(pd).start();
-        */
+        //启动计步服务
+        pedometerServiceIntent = new Intent(this, PedometerService.class);
+        startService(pedometerServiceIntent);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         beaconService.destory();
+        stopService(pedometerServiceIntent);
     }
 }
