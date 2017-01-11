@@ -64,7 +64,9 @@ public class MainActivity extends BaseActivity {
     private TimerThread timerThread; //计时器
 
     //Handler，用于更新地图、状态显示
-    private Handler handler = new Handler() {
+    public static Handler handler;
+
+    class MainHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
             //TODO: 更新地图、状态显示
@@ -77,6 +79,7 @@ public class MainActivity extends BaseActivity {
                     int y = data.getInt("y");
                     statusView.setText("STATUS - " + (flag ? "GET LOCATION SUCCESSFULLY" : "FAILED TO GET LOCATION"));
                     //recvView.setText("RECV - X: " + x + "; Y: " + y);
+                    Log.e(TAG, "X: " + x + "; Y: " + y);
 
                     if(flag) {
                         updatePoint(transferX(x), transferY(y));
@@ -188,9 +191,10 @@ public class MainActivity extends BaseActivity {
 //        sendView = (TextView) findViewById(R.id.sendview);
 //        sendView.setText("SEND - ");
 
-        //Log.e(TAG, "CREATE MAP");
-        //创建并显示地图
+        //注册handler及处理函数
+        handler = new MainHandler();
 
+        //创建并显示地图
         mapView = (FMMapView) findViewById(R.id.mapview);
         map = mapView.getFMMap();
         map.openMapById(mapId);
@@ -219,7 +223,6 @@ public class MainActivity extends BaseActivity {
         //网络连接
         //Log.e(TAG, "START CONNECTION");
         TCPConnection conn = TCPConnection.instance();
-        conn.setHandler(handler);
         conn.setServerAddr(serverIp, serverPort);
         conn.connect();
 

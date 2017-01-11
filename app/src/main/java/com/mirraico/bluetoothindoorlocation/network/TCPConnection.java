@@ -32,8 +32,6 @@ public class TCPConnection {
     private String remoteIp; //服务器地址
     private int remotePort; //服务器端口
 
-    private Handler mainHandler; //主界面Handler
-
     private SocketChannel channel;
     private Selector selector;
 
@@ -66,11 +64,6 @@ public class TCPConnection {
     public void setServerAddr(String remoteIp, int remotePort) {
         this.remoteIp = remoteIp;
         this.remotePort = remotePort;
-    }
-
-    //设置主界面的回调
-    public void setHandler(Handler handler) {
-        this.mainHandler = handler;
     }
 
     //连接，该函数立刻返回，连接过程在线程中完成，连接成功后接收也由该线程完成
@@ -148,7 +141,7 @@ public class TCPConnection {
                                 Bundle sendData = new Bundle();
                                 sendData.putInt("type", MainActivity.TYPE_SERVER_DOWN);
                                 sendMsg.setData(sendData);
-                                mainHandler.sendMessage(sendMsg);
+                                MainActivity.handler.sendMessage(sendMsg);
                                 return;
                             } else if(ret > 0) {
                                 recvBuffer.flip();
@@ -204,7 +197,7 @@ public class TCPConnection {
                             sendData.putInt("y", jsonObject.getInt("y"));
                             sendData.putBoolean("flag", true);
                             sendMsg.setData(sendData);
-                            mainHandler.sendMessage(sendMsg);
+                            MainActivity.handler.sendMessage(sendMsg);
                         } else if(status == Protocol.TYPE_FAILURE) {
                             Log.e(TAG, "GET LOCATION FAILURE");
                             Message sendMsg = Message.obtain();
@@ -212,7 +205,7 @@ public class TCPConnection {
                             sendData.putInt("type", MainActivity.TYPE_LOCATE);
                             sendData.putBoolean("flag", false);
                             sendMsg.setData(sendData);
-                            mainHandler.sendMessage(sendMsg);
+                            MainActivity.handler.sendMessage(sendMsg);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
