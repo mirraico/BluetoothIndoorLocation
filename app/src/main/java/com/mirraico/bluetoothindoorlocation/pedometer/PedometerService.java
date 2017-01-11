@@ -1,4 +1,4 @@
-package com.mirraico.bluetoothindoorlocation.sensor;
+package com.mirraico.bluetoothindoorlocation.pedometer;
 
 import android.app.Service;
 import android.content.Intent;

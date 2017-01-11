@@ -32,6 +32,9 @@ public class InfoThread extends Thread {
 
     public final static int INFO_SENSOR = 0; //传感器类型数据
     public final static int INFO_BEACON = 1; //BEACON类型数据
+    public final static int INFO_TIMER = 2; //计时器到期通知类型数据
+
+    private long timeOfNow = 0; //辅助计时器
 
     private Map<String, BeaconData> beaconList;
     private List<String> macList; //维护一个MAC列表，在有些beacon搜索不到时，从该列表查出哪个搜索不到了，并清除map中对应的BeaconData
@@ -106,7 +109,7 @@ public class InfoThread extends Thread {
                                         ) { //调试用
                                     Log.e(TAG, "ERROR IN MACLIST MAINTENANCE");
                                 }*/
-                                Log.e(TAG, "RECV BEACON NUM: " + jsonArray.length() + ", MAC LIST SIZE: " + macList.size() + ", BEACON MAP SIZE: " + beaconList.size());
+                                //Log.e(TAG, "RECV BEACON NUM: " + jsonArray.length() + ", MAC LIST SIZE: " + macList.size() + ", BEACON MAP SIZE: " + beaconList.size());
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -138,7 +141,8 @@ public class InfoThread extends Thread {
                                 } else {
                                     jsonObject.put("hasRSS", false);
                                 }
-                                jsonObject.put("sensors", json);
+                                //Log.e(TAG, "SENSOR STRING: " + json);
+                                jsonObject.put("sensors", new JSONArray(json));
                                 //Log.e(TAG, "SEND JOSN: " + jsonObject.toString());
                                 Message sendMsg = Message.obtain();
                                 Bundle sendData = new Bundle();
@@ -146,10 +150,56 @@ public class InfoThread extends Thread {
                                 sendMsg.setData(sendData);
                                 //把消息递交发送队列
                                 sendThread.getHandler().sendMessage(sendMsg);
-
+                                //更新超时时间
+                                timeOfNow = System.currentTimeMillis();
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
+                            break;
+                        case InfoThread.INFO_TIMER:
+                            if(timeOfNow == 0) {
+                                timeOfNow = System.currentTimeMillis();
+                                break;
+                            }
+                            if(System.currentTimeMillis() - timeOfNow <= 1500) { //1500ms的静止定位超时
+                                break;
+                            }
+                            Log.e(TAG, "TIME EXPIRES");
+                            try {
+                                jsonObject = new JSONObject();
+                                jsonObject.put("type", Protocol.TYPE_REQ);
+                                jsonObject.put("isStep", false);
+                                JSONArray rssisArray = new JSONArray();
+                                for(Map.Entry<String, BeaconData> entry : beaconList.entrySet()) {
+                                    BeaconData beaconData = entry.getValue();
+                                    if(beaconData.isEmpty()) continue;
+                                    String MAC = beaconData.getMAC();
+                                    int avgRSS = beaconData.getAverageRSS(); //取RSS平均值
+
+                                    JSONObject rssiObject = new JSONObject();
+                                    rssiObject.put("MAC", MAC);
+                                    rssiObject.put("RSS", avgRSS);
+                                    rssisArray.put(rssiObject);
+                                }
+                                if(rssisArray.length() > 0) {
+                                    jsonObject.put("hasRSS", true);
+                                    jsonObject.put("rssis", rssisArray);
+                                } else {
+                                    jsonObject.put("hasRSS", false);
+                                }
+                                Message sendMsg = Message.obtain();
+                                Bundle sendData = new Bundle();
+                                sendData.putString("data", jsonObject.toString());
+                                sendMsg.setData(sendData);
+                                //把消息递交发送队列
+                                sendThread.getHandler().sendMessage(sendMsg);
+                                //更新超时时间
+                                timeOfNow = System.currentTimeMillis();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        default:
                             break;
                     }
                 }

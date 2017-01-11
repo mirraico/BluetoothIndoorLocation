@@ -1,6 +1,13 @@
 package com.mirraico.bluetoothindoorlocation.beacon;
 
+import android.util.Log;
+
+import java.util.Arrays;
+
 public class BeaconData {
+
+    private static String TAG = BeaconData.class.getSimpleName();
+
     private String MAC;
     private int RSSArraySize = 5;
     private int RSSArrayCnt = 0;
@@ -31,14 +38,23 @@ public class BeaconData {
         RSSArrayCnt = 0;
     }
 
-    //返回beacon平均RSS
+    //返回beacon中位数RSS
     public int getAverageRSS() {
         if(isEmpty()) return 0;
+
+        //Log.e(TAG, getMAC() + " RSS ARRAYS: " + RSSArray[0] + " " + RSSArray[1] + " " + RSSArray[2] + " " + RSSArray[3] + " " + RSSArray[4]);
+        int[] sortArray = Arrays.copyOf(RSSArray, RSSArrayCnt);
+        Arrays.sort(sortArray);
+        //Log.e(TAG, getMAC() + " RSS MID: " + sortArray[RSSArrayCnt/2]);
+        return sortArray[RSSArrayCnt/2];
+
+        /*
         int aveRss = 0;
         for(int i = 0; i < RSSArrayCnt; i++) {
             aveRss += RSSArray[i];
         }
         return aveRss / RSSArrayCnt;
+        */
     }
 
     public boolean isEmpty() {

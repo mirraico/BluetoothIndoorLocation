@@ -40,6 +40,7 @@ public class BeaconService {
                 JSONArray jsonArray = new JSONArray();
                 JSONObject jsonObject;
                 if(list != null && list.size() > 0) {
+                    //Log.e(TAG, "BEACON NUM: " + list.size());
                     for(int i = 0; i < list.size(); i++) {
                         jsonObject = new JSONObject();
                         try {

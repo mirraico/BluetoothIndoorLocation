@@ -82,7 +82,16 @@ public class TCPConnection {
 
     //向服务器发送数据
     public int send(String str) {
-        if(!flag) return -1; //未连接
+
+        //调试数据
+        Message sendMsg = Message.obtain();
+        Bundle sendData = new Bundle();
+        sendData.putInt("type", MainActivity.TYPE_DEBUG_SEND);
+        sendData.putString("debug", str);
+        sendMsg.setData(sendData);
+        mainHandler.sendMessage(sendMsg);
+
+        if(!flag) return -1; //未连接到服务器，返回
         try {
             sendBuffer.clear();
             sendBuffer.put(str.getBytes("utf-8"));
@@ -187,10 +196,17 @@ public class TCPConnection {
                             sendData.putInt("type", MainActivity.TYPE_LOCATE);
                             sendData.putInt("x", jsonObject.getInt("x"));
                             sendData.putInt("y", jsonObject.getInt("y"));
+                            sendData.putBoolean("flag", true);
                             sendMsg.setData(sendData);
                             mainHandler.sendMessage(sendMsg);
                         } else if(status == Protocol.TYPE_FAILURE) {
                             Log.e(TAG, "GET LOCATION FAILURE");
+                            Message sendMsg = Message.obtain();
+                            Bundle sendData = new Bundle();
+                            sendData.putInt("type", MainActivity.TYPE_LOCATE);
+                            sendData.putBoolean("flag", false);
+                            sendMsg.setData(sendData);
+                            mainHandler.sendMessage(sendMsg);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();

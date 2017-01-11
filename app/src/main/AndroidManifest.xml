@@ -2,27 +2,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mirraico.bluetoothindoorlocation">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <!-- 声明应用需要使用设备的蓝牙BLE -->
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />
     <!-- use permission on Android M -->
-    <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <service android:name="com.aprilbrother.aprilbrothersdk.service.BeaconService"
-        android:exported="false"/>
-    <!--support modify abeacon with sdk1.6.0 -->
-    <service android:name="com.aprilbrother.aprilbrothersdk.services.ABeaconUartService"
+    <service
+        android:name="com.aprilbrother.aprilbrothersdk.service.BeaconService"
         android:exported="false" />
-    <service android:name="com.aprilbrother.aprilbrothersdk.services.UartService"
+    <!--support modify abeacon with sdk1.6.0 -->
+    <service
+        android:name="com.aprilbrother.aprilbrothersdk.services.ABeaconUartService"
+        android:exported="false" />
+    <service
+        android:name="com.aprilbrother.aprilbrothersdk.services.UartService"
         android:exported="false" />
 
     <application
@@ -51,7 +54,7 @@
         <service
             android:name="com.aprilbrother.aprilbrothersdk.services.UartService"
             android:exported="false" />
-        <service android:name=".sensor.PedometerService"/>
+        <service android:name=".pedometer.PedometerService" />
     </application>
 
 </manifest>

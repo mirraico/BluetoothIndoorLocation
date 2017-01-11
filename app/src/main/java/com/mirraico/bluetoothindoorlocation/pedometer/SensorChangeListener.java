@@ -1,12 +1,10 @@
-package com.mirraico.bluetoothindoorlocation.sensor;
+package com.mirraico.bluetoothindoorlocation.pedometer;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
-
-import com.mirraico.bluetoothindoorlocation.network.Protocol;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,8 +58,9 @@ public class SensorChangeListener implements SensorEventListener {
     //存放三轴线性加速度数据
     private float[] linearAcceleratorValues = new float[3];
 
-    //存放待发送的数据，从静止到走动8次一发，走动中2次一发
-    private String[] sendArray = new String[8];
+    //存放待发送的数据，从静止到走动START_STEP次一发，走动中2次一发
+    private final static int START_STEP = 6;
+    private PedometerData[] pedometerDatas = new PedometerData[START_STEP];
     private int sendCnt = 0;
 
     //回调接口
@@ -142,30 +141,43 @@ public class SensorChangeListener implements SensorEventListener {
 
                     //超过3步开始计步，防止无意义抖动，前3步会在第3步的时候一起显示，同时3步一起发送
                     if(detectValidStep()) {
-                        sendArray[sendCnt++] = generateSensorInfo(timeOfNow - timeOfLastPeak);
+                        pedometerDatas[sendCnt] = new PedometerData(sendCnt + 1, timeOfNow - timeOfLastPeak);
+                        pedometerDatas[sendCnt].pushSensorData(generateSensorData());
+                        sendCnt += 1;
                         Log.e(TAG, "STEP COUNT: " + sendCnt);
                     } else {
                         sendCnt = 0;
                         stepFlag = false;
                         Log.e(TAG, "STEP COUNT: " + sendCnt);
                     }
-                    //2次(行动中)或8次(静止)调用回调函数
-                    if ((stepFlag && sendCnt == 2) || (!stepFlag && sendCnt == 8)) {
+                    //2次(行动中)或START_STEP次(静止)调用回调函数
+                    if ((stepFlag && sendCnt == 2) || (!stepFlag && sendCnt == START_STEP)) {
                         stepFlag = true;
-                        JSONArray sensorsArray = new JSONArray();
+                        JSONArray pedometerArray = new JSONArray();
                         try {
                             for(int i = 0; i < sendCnt; i++) {
                                 JSONObject jsonObject;
                                 jsonObject = new JSONObject();
-                                jsonObject.put("stepNo", i + 1);
-                                jsonObject.put("sensorInfo", sendArray[i]);
-                                sensorsArray.put(jsonObject);
+                                jsonObject.put("stepNo", pedometerDatas[i].getStepNo());
+                                jsonObject.put("timeDiff", pedometerDatas[i].getTimeDiff());
+                                JSONArray sensorArray = new JSONArray();
+                                SensorData[] sensorDatas = pedometerDatas[i].getSensorArray();
+                                for(int j = 0; j < sensorDatas.length; j++) {
+                                    JSONObject sensorObject = new JSONObject();
+                                    sensorObject.put("azimuthAngle", sensorDatas[j].getAngle());
+                                    sensorObject.put("weAcce", sensorDatas[j].getWE());
+                                    sensorObject.put("nsAcce", sensorDatas[j].getNS());
+                                    sensorObject.put("udAcce", sensorDatas[j].getUD());
+                                    sensorArray.put(sensorObject);
+                                }
+                                jsonObject.put("sensorInfo", sensorArray);
+                                pedometerArray.put(jsonObject);
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
                         //Log.e(TAG, "ONSEND: " + sensorsArray.toString());
-                        stepListener.onSend(sensorsArray.toString());
+                        stepListener.onSend(pedometerArray.toString());
                         sendCnt = 0;
                     }
                 }
@@ -279,7 +291,7 @@ public class SensorChangeListener implements SensorEventListener {
         return ave;
     }
 
-    public String generateSensorInfo(long timeDiff) {
+    public SensorData generateSensorData() {
 
         float[] R = new float[9];
         float[] values = new float[3];
@@ -348,18 +360,7 @@ public class SensorChangeListener implements SensorEventListener {
 
         //Log.e(TAG, "UD:" + a0 + " NS:" + a1 + " WE:" + a2 + " ANGLE:" + Math.toDegrees(values[0]) + " TIME:" + timeDiff);
 
-        JSONObject jsonObject = new JSONObject();
-        try {
-            jsonObject.put("udAcce", a0);
-            jsonObject.put("nsAcce", a1);
-            jsonObject.put("weAcce", a2);
-            jsonObject.put("azimuthAngle", values[0]);
-            jsonObject.put("timeDiff", timeDiff);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        return jsonObject.toString();
+        return new SensorData(values[0], a2, a1, a0);
     }
 
     @Override
