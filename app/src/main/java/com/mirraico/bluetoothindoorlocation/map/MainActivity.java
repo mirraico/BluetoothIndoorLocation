@@ -8,8 +8,15 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.fengmap.android.map.FMMap;
+import com.fengmap.android.map.FMMapExtent;
 import com.fengmap.android.map.FMMapView;
 
+import com.fengmap.android.map.FMViewMode;
+import com.fengmap.android.map.event.OnFMMapInitListener;
+import com.fengmap.android.map.geometry.FMMapCoord;
+import com.fengmap.android.map.layer.FMLocationLayer;
+import com.fengmap.android.map.marker.FMLocationMarker;
+import com.fengmap.android.map.style.FMLocationMarkerStyle;
 import com.mirraico.bluetoothindoorlocation.BaseActivity;
 import com.mirraico.bluetoothindoorlocation.beacon.BeaconService;
 import com.mirraico.bluetoothindoorlocation.R;
@@ -31,18 +38,22 @@ public class MainActivity extends BaseActivity {
     private static String TAG = MainActivity.class.getSimpleName();
 
     //用于测试
-    private TextView recvView;
-    private TextView sendView;
+    //private TextView recvView;
+    //private TextView sendView;
     private TextView statusView;
 
     //消息类型
     public final static int TYPE_LOCATE = 1; //定位消息
-    public final static int TYPE_DEBUG_SEND = 99; //调试的发送消息
+    public final static int TYPE_SERVER_DOWN = 10; //服务器关闭消息
+    //public final static int TYPE_DEBUG_SEND = 99; //调试的发送消息
 
     //地图
     private FMMapView mapView;
     private FMMap map;
     private String mapId = "1561101080390313";
+    private FMMapExtent ex; //地图范围
+    private FMLocationLayer locLayer; //定位图层
+    private FMLocationMarkerStyle style; //定位图层样式
 
     //服务器设定
     private String serverIp = "123.207.9.36";
@@ -64,18 +75,62 @@ public class MainActivity extends BaseActivity {
                     boolean flag = data.getBoolean("flag");
                     int x = data.getInt("x");
                     int y = data.getInt("y");
-                    statusView.setText("STATUS - " + (flag ? "SUCCESS" : "FAILURE"));
-                    recvView.setText("RECV - X: " + x + "; Y: " + y);
+                    statusView.setText("STATUS - " + (flag ? "GET LOCATION SUCCESSFULLY" : "FAILED TO GET LOCATION"));
+                    //recvView.setText("RECV - X: " + x + "; Y: " + y);
+
+                    if(flag) {
+                        updatePoint(transferX(x), transferY(y));
+                    } else {
+                        removePoint();
+                    }
                     break;
+                case TYPE_SERVER_DOWN:
+                    statusView.setText("STATUS - SERVER IS DOWN");
+                    removePoint();
+                    break;
+                /*
                 case TYPE_DEBUG_SEND:
                     String debug = data.getString("debug");
                     showDebugSend(debug);
                     break;
+                */
                 default:
                     break;
             }
         }
     };
+
+    private double transferX(double x) {
+        return ex.getMinX() + 0.4 + (x*1.0 / 100);
+    }
+
+    private double transferY(double y) {
+        return ex.getMaxY() - 0.5 - (y*1.0 / 100);
+    }
+
+    private void updatePoint(double x, double y) {
+        if(locLayer.getAll().size() == 0) {
+            FMMapCoord point = new FMMapCoord(x, y, 0.0);
+            FMLocationMarker marker = new FMLocationMarker(1, point, style);
+            locLayer.addMarker(marker);
+            map.updateMap();
+
+        } else {
+            FMMapCoord point = new FMMapCoord(x, y, 0.0);
+            FMLocationMarker marker = locLayer.getAll().get(0);
+            marker.setPosition(point);
+            locLayer.updateMarker(marker);
+            map.updateMap();
+        }
+    }
+
+    private void removePoint() {
+        if(locLayer.getAll().size() > 0) {
+            FMLocationMarker marker = locLayer.getAll().get(0);
+            locLayer.removeMarker(marker);
+            map.updateMap();
+        }
+    }
 
     private void showDebugSend(String msg) {
         StringBuilder show = new StringBuilder();
@@ -115,7 +170,7 @@ public class MainActivity extends BaseActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        sendView.setText(show.toString());
+        //sendView.setText(show.toString());
     }
 
     @Override
@@ -124,28 +179,42 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
 
         //用于测试
+
         Log.e(TAG, "-----START TEST-----");
         statusView = (TextView) findViewById(R.id.statusview);
-        statusView.setText("STATUS - NOT CONNECTED");
-        recvView = (TextView) findViewById(R.id.recvview);
-        recvView.setText("RECV - X: 0; Y: 0");
-        sendView = (TextView) findViewById(R.id.sendview);
-        sendView.setText("SEND - ");
+        statusView.setText("STATUS - SERVER IS NOT CONNECTED");
+//        recvView = (TextView) findViewById(R.id.recvview);
+//        recvView.setText("RECV - X: 0; Y: 0");
+//        sendView = (TextView) findViewById(R.id.sendview);
+//        sendView.setText("SEND - ");
 
         //Log.e(TAG, "CREATE MAP");
         //创建并显示地图
-        /*
+
         mapView = (FMMapView) findViewById(R.id.mapview);
         map = mapView.getFMMap();
         map.openMapById(mapId);
         //地图事件回调
         map.setOnFMMapInitListener(new OnFMMapInitListener() {
             @Override
-            public void onMapInitSuccess(String path) {}
+            public void onMapInitSuccess(String path) {
+                map.showCompass(true);
+                map.setFMViewMode(FMViewMode.FMVIEW_MODE_2D);
+                map.updateMap();
+
+                ex = map.getFMMapExtent();
+                locLayer = map.getFMLayerProxy().getFMLocationLayer();
+                locLayer.setVisible(true);
+                map.addLayer(locLayer);
+
+                style = new FMLocationMarkerStyle();
+                style.setActiveImageFromRes(R.drawable.active_p);
+                style.setStaticImageFromRes(R.drawable.static_p);
+            }
             @Override
             public void onMapInitFailure(String path, int errCode) {}
         });
-        */
+
 
         //网络连接
         //Log.e(TAG, "START CONNECTION");

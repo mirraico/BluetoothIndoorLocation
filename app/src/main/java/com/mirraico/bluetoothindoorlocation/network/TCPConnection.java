@@ -83,6 +83,7 @@ public class TCPConnection {
     //向服务器发送数据
     public int send(String str) {
 
+        /*
         //调试数据
         Message sendMsg = Message.obtain();
         Bundle sendData = new Bundle();
@@ -90,6 +91,7 @@ public class TCPConnection {
         sendData.putString("debug", str);
         sendMsg.setData(sendData);
         mainHandler.sendMessage(sendMsg);
+        */
 
         if(!flag) return -1; //未连接到服务器，返回
         try {
@@ -142,7 +144,11 @@ public class TCPConnection {
                             if(ret == -1) { //服务器已断开
                                 Log.e(TAG, "SERVER IS DOWN");
                                 flag = false;
-                                //TODO: 通知主界面
+                                Message sendMsg = Message.obtain();
+                                Bundle sendData = new Bundle();
+                                sendData.putInt("type", MainActivity.TYPE_SERVER_DOWN);
+                                sendMsg.setData(sendData);
+                                mainHandler.sendMessage(sendMsg);
                                 return;
                             } else if(ret > 0) {
                                 recvBuffer.flip();
