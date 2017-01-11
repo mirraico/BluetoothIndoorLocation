@@ -4,7 +4,11 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.os.Message;
 import android.util.Log;
+
+import com.mirraico.bluetoothindoorlocation.map.MainActivity;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -119,6 +123,19 @@ public class SensorChangeListener implements SensorEventListener {
             default:
                 break;
         }
+
+        //计算航向角通知主界面
+        float[] R = new float[9];
+        float[] values = new float[3];
+        SensorManager.getRotationMatrix(R, null, acceleratorValues, magneticValues);
+        SensorManager.getOrientation(R, values);
+
+        Message sendMsg = Message.obtain();
+        Bundle sendData = new Bundle();
+        sendData.putInt("type", MainActivity.TYPE_ANGLE);
+        sendData.putFloat("angle", new Double(Math.toDegrees(values[0])).floatValue());
+        sendMsg.setData(sendData);
+        MainActivity.handler.sendMessage(sendMsg);
     }
 
     /*

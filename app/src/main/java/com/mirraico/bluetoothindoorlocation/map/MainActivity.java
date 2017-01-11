@@ -44,6 +44,7 @@ public class MainActivity extends BaseActivity {
 
     //消息类型
     public final static int TYPE_LOCATE = 1; //定位消息
+    public final static int TYPE_ANGLE = 2; //航向角消息
     public final static int TYPE_SERVER_DOWN = 10; //服务器关闭消息
     //public final static int TYPE_DEBUG_SEND = 99; //调试的发送消息
 
@@ -54,6 +55,10 @@ public class MainActivity extends BaseActivity {
     private FMMapExtent ex; //地图范围
     private FMLocationLayer locLayer; //定位图层
     private FMLocationMarkerStyle style; //定位图层样式
+
+    //航向角平滑队列
+    private int[] angleArray = new int[3];
+    private int angleCnt = 0;
 
     //服务器设定
     private String serverIp = "123.207.9.36";
@@ -79,13 +84,17 @@ public class MainActivity extends BaseActivity {
                     int y = data.getInt("y");
                     statusView.setText("STATUS - " + (flag ? "GET LOCATION SUCCESSFULLY" : "FAILED TO GET LOCATION"));
                     //recvView.setText("RECV - X: " + x + "; Y: " + y);
-                    Log.e(TAG, "X: " + x + "; Y: " + y);
-
+                    //Log.e(TAG, "X: " + x + "; Y: " + y);
                     if(flag) {
                         updatePoint(transferX(x), transferY(y));
                     } else {
                         removePoint();
                     }
+                    break;
+                case TYPE_ANGLE:
+                    float angle = data.getFloat("angle");
+                    Log.e(TAG, "ANGLE: " + transferAngle(angle));
+                    updateAngle(transferAngle(angle));
                     break;
                 case TYPE_SERVER_DOWN:
                     statusView.setText("STATUS - SERVER IS DOWN");
@@ -111,8 +120,12 @@ public class MainActivity extends BaseActivity {
         return ex.getMaxY() - 0.5 - (y*1.0 / 100);
     }
 
+    private float transferAngle(float angle) {
+        return 180.0f - angle;
+    }
+
     private void updatePoint(double x, double y) {
-        if(locLayer.getAll().size() == 0) {
+        if(locLayer == null || locLayer.getAll().size() == 0) {
             FMMapCoord point = new FMMapCoord(x, y, 0.0);
             FMLocationMarker marker = new FMLocationMarker(1, point, style);
             locLayer.addMarker(marker);
@@ -128,11 +141,20 @@ public class MainActivity extends BaseActivity {
     }
 
     private void removePoint() {
-        if(locLayer.getAll().size() > 0) {
+        if(locLayer != null && locLayer.getAll().size() > 0) {
             FMLocationMarker marker = locLayer.getAll().get(0);
             locLayer.removeMarker(marker);
             map.updateMap();
         }
+    }
+
+    private void updateAngle(float angle) {
+        if(locLayer == null || locLayer.getAll().size() == 0) return;
+
+        FMLocationMarker marker = locLayer.getAll().get(0);
+        ((FMLocationMarkerStyle)marker.getStyle()).setAngle(angle);
+        locLayer.updateMarker(marker);
+        map.updateMap();
     }
 
     private void showDebugSend(String msg) {
