@@ -84,8 +84,9 @@ public class MainActivity extends BaseActivity {
                     int y = data.getInt("y");
                     statusView.setText("STATUS - " + (flag ? "GET LOCATION SUCCESSFULLY" : "FAILED TO GET LOCATION"));
                     //recvView.setText("RECV - X: " + x + "; Y: " + y);
-                    //Log.e(TAG, "X: " + x + "; Y: " + y);
-                    if(flag) {
+                    Log.e(TAG, "X: " + x + "; Y: " + y);
+                    x = 0; y = 0;
+                    if(!flag) {
                         updatePoint(transferX(x), transferY(y));
                     } else {
                         removePoint();
@@ -93,7 +94,7 @@ public class MainActivity extends BaseActivity {
                     break;
                 case TYPE_ANGLE:
                     float angle = data.getFloat("angle");
-                    Log.e(TAG, "ANGLE: " + transferAngle(angle));
+                    //Log.e(TAG, "ANGLE: " + transferAngle(angle));
                     updateAngle(transferAngle(angle));
                     break;
                 case TYPE_SERVER_DOWN:
@@ -121,7 +122,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private float transferAngle(float angle) {
-        return 180.0f - angle;
+        return (180.0f - angle + 85.0f) % 360;
     }
 
     private void updatePoint(double x, double y) {
