@@ -12,6 +12,7 @@ import com.fengmap.android.map.FMMapExtent;
 import com.fengmap.android.map.FMMapView;
 
 import com.fengmap.android.map.FMViewMode;
+import com.fengmap.android.map.event.OnFMMapClickListener;
 import com.fengmap.android.map.event.OnFMMapInitListener;
 import com.fengmap.android.map.geometry.FMMapCoord;
 import com.fengmap.android.map.layer.FMLocationLayer;
@@ -85,8 +86,8 @@ public class MainActivity extends BaseActivity {
                     statusView.setText("STATUS - " + (flag ? "GET LOCATION SUCCESSFULLY" : "FAILED TO GET LOCATION"));
                     //recvView.setText("RECV - X: " + x + "; Y: " + y);
                     Log.e(TAG, "X: " + x + "; Y: " + y);
-                    x = 0; y = 0;
-                    if(!flag) {
+                    //x = 0; y = 0;
+                    if(flag) {
                         updatePoint(transferX(x), transferY(y));
                     } else {
                         removePoint();
@@ -228,6 +229,19 @@ public class MainActivity extends BaseActivity {
                 map.showCompass(true);
                 map.setFMViewMode(FMViewMode.FMVIEW_MODE_2D);
                 map.updateMap();
+
+                //2D 3D转换
+                map.setOnFMMapClickListener(new OnFMMapClickListener() {
+                    @Override
+                    public void onMapClick(float x, float y) {
+                        if(map.currentFMViewMode() == FMViewMode.FMVIEW_MODE_2D) {
+                            map.setFMViewMode(FMViewMode.FMVIEW_MODE_3D);
+                        } else {
+                            map.setFMViewMode(FMViewMode.FMVIEW_MODE_2D);
+                        }
+                        map.updateMap();
+                    }
+                });
 
                 ex = map.getFMMapExtent();
                 locLayer = map.getFMLayerProxy().getFMLocationLayer();
